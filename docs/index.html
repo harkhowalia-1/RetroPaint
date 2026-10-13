@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RetroPaint — the classic bitmap editor for Mac, iPad &amp; iPhone</title>
+  <meta name="description" content="RetroPaint brings the classic early-2000s bitmap editor to Mac, iPad and iPhone. Try it right here in your browser.">
+  <meta property="og:title" content="RetroPaint">
+  <meta property="og:description" content="The classic bitmap editor, rebuilt natively for Mac, iPad and iPhone.">
+  <meta property="og:image" content="assets/screens/mac.png">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Boot screen -->
+  <div id="boot" class="boot" aria-hidden="true">
+    <div class="boot-inner">
+      <img src="assets/icon.png" alt="" width="96" height="96" class="pixelated">
+      <div class="boot-title">Retro<span>Paint</span></div>
+      <div class="boot-bar"><div class="boot-blocks"><i></i><i></i><i></i></div></div>
+      <div class="boot-hint">Click to skip</div>
+    </div>
+  </div>
+
+  <main id="desktop" class="desktop">
+    <h1 class="sr-only">RetroPaint</h1>
+
+    <!-- Desktop icons -->
+    <nav class="icons" aria-label="Desktop">
+      <button class="icon" data-open="paint"><img src="assets/icon.png" alt="" class="pixelated"><span>RetroPaint</span></button>
+      <button class="icon" data-open="welcome"><img src="assets/tools/text.png" alt="" class="pixelated"><span>Read Me</span></button>
+      <button class="icon" data-open="screens"><img src="assets/tools/magnifier.png" alt="" class="pixelated"><span>Screenshots</span></button>
+      <button class="icon" data-open="features"><img src="assets/tools/select.png" alt="" class="pixelated"><span>Features</span></button>
+      <button class="icon" data-open="get"><img src="assets/tools/fill.png" alt="" class="pixelated"><span>Get the App</span></button>
+      <a class="icon" href="https://github.com/harkhowalia-1/RetroPaint" target="_blank" rel="noopener"><img src="assets/tools/pencil.png" alt="" class="pixelated"><span>Source Code</span></a>
+    </nav>
+
+    <!-- Welcome -->
+    <section class="window" id="win-welcome" data-title="Welcome to RetroPaint" data-icon="assets/tools/text.png" aria-labelledby="t-welcome">
+      <header class="title-bar"><img src="assets/tools/text.png" alt="" class="pixelated"><span id="t-welcome">Welcome to RetroPaint</span>
+        <div class="controls"><button class="min" aria-label="Minimize"></button><button class="max" aria-label="Maximize"></button><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="window-body welcome">
+        <div class="hero">
+          <img src="assets/icon.png" alt="RetroPaint app icon" width="112" height="112" class="pixelated hero-icon">
+          <div>
+            <p class="eyebrow">For Mac · iPad · iPhone</p>
+            <h2 class="hero-title">Retro<span>Paint</span></h2>
+            <p class="lede">The classic bitmap editor you grew up with — pencils, paint buckets, spray cans and all — rebuilt from scratch as a native app for Apple devices.</p>
+          </div>
+        </div>
+        <div class="cta">
+          <button class="xp-btn primary" data-open="paint">🖌 Try it right here</button>
+          <a class="xp-btn" href="https://github.com/harkhowalia-1/RetroPaint" target="_blank" rel="noopener">View on GitHub</a>
+          <button class="xp-btn" data-open="screens">Screenshots</button>
+        </div>
+        <ul class="facts">
+          <li><b>16</b> classic tools</li>
+          <li><b>28</b> palette colors</li>
+          <li><b>0</b> anti-aliasing</li>
+          <li><b>100%</b> pixels</li>
+        </ul>
+        <p class="tip"><img src="assets/tools/picker.png" alt="" class="pixelated"> Tip: windows can be dragged by their title bars. Double-click the desktop icons to open more.</p>
+      </div>
+    </section>
+
+    <!-- Paint -->
+    <section class="window paint-window" id="win-paint" data-title="untitled - RetroPaint" data-icon="assets/icon.png" aria-labelledby="t-paint">
+      <header class="title-bar"><img src="assets/icon.png" alt="" class="pixelated"><span id="t-paint">untitled - RetroPaint</span>
+        <div class="controls"><button class="min" aria-label="Minimize"></button><button class="max" aria-label="Maximize"></button><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="menubar" role="menubar">
+        <div class="menu"><button role="menuitem">File</button>
+          <div class="menu-list" role="menu">
+            <button data-cmd="new">New</button>
+            <button data-cmd="open">Open…</button>
+            <button data-cmd="save">Save as PNG</button>
+            <hr><button data-cmd="demo">Load demo picture</button>
+          </div></div>
+        <div class="menu"><button role="menuitem">Edit</button>
+          <div class="menu-list" role="menu"><button data-cmd="undo">Undo <kbd>Ctrl+Z</kbd></button></div></div>
+        <div class="menu"><button role="menuitem">Image</button>
+          <div class="menu-list" role="menu">
+            <button data-cmd="flipH">Flip Horizontal</button>
+            <button data-cmd="flipV">Flip Vertical</button>
+            <button data-cmd="invert">Invert Colors</button>
+            <hr><button data-cmd="clear">Clear Image</button>
+          </div></div>
+        <div class="menu"><button role="menuitem">Help</button>
+          <div class="menu-list" role="menu">
+            <button data-open="features">Features</button>
+            <button data-open="get">Get the full app</button>
+            <hr><button data-open="about">About RetroPaint</button>
+          </div></div>
+      </div>
+      <div class="paint-body">
+        <div class="toolbox">
+          <div class="tools" id="tools" role="toolbar" aria-label="Tools"></div>
+          <div class="options" id="options"></div>
+        </div>
+        <div class="workspace" id="workspace">
+          <canvas id="canvas" width="640" height="480" aria-label="Drawing canvas"></canvas>
+        </div>
+      </div>
+      <div class="colorbox">
+        <div class="current" aria-label="Current colors"><div id="bg-swatch"></div><div id="fg-swatch"></div></div>
+        <div class="palette" id="palette" aria-label="Palette"></div>
+        <div class="palette-hint">Left click: foreground · Right click: background</div>
+      </div>
+      <div class="statusbar"><span id="status-help">Draws a free-form line one pixel wide.</span><span id="status-pos"></span><span id="status-size"></span></div>
+      <input type="file" id="file-input" accept="image/*" hidden>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="window" id="win-screens" data-title="Screenshots" data-icon="assets/tools/magnifier.png" hidden aria-labelledby="t-screens">
+      <header class="title-bar"><img src="assets/tools/magnifier.png" alt="" class="pixelated"><span id="t-screens">Screenshots</span>
+        <div class="controls"><button class="min" aria-label="Minimize"></button><button class="max" aria-label="Maximize"></button><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="window-body">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="mac">Mac</button>
+          <button role="tab" aria-selected="false" data-tab="ipad">iPad</button>
+          <button role="tab" aria-selected="false" data-tab="iphone">iPhone</button>
+        </div>
+        <div class="tab-panel">
+          <figure data-panel="mac"><img src="assets/screens/mac.png" alt="RetroPaint on a Mac showing a drawing of a house, rainbow and tree" loading="lazy"><figcaption>macOS — the classic window layout with a native menu bar and right-click colors.</figcaption></figure>
+          <figure data-panel="ipad" hidden><img src="assets/screens/ipad.png" alt="RetroPaint on iPad" loading="lazy" class="tall"><figcaption>iPad — the same layout, made for touch, Apple Pencil and trackpads.</figcaption></figure>
+          <figure data-panel="iphone" hidden><img src="assets/screens/iphone.png" alt="RetroPaint on iPhone" loading="lazy" class="tall"><figcaption>iPhone — the look you know, re-flowed for one hand: tools and colors along the bottom.</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="window" id="win-features" data-title="Features" data-icon="assets/tools/select.png" hidden aria-labelledby="t-features">
+      <header class="title-bar"><img src="assets/tools/select.png" alt="" class="pixelated"><span id="t-features">Features</span>
+        <div class="controls"><button class="min" aria-label="Minimize"></button><button class="max" aria-label="Maximize"></button><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="window-body">
+        <ul class="feature-list">
+          <li><img src="assets/tools/pencil.png" alt="" class="pixelated"><div><b>All 16 classic tools</b>Free-form &amp; rectangle select, eraser, fill, color picker, magnifier, pencil, brush, airbrush, text, line, curve, rectangle, polygon, ellipse and rounded rectangle.</div></li>
+          <li><img src="assets/tools/picker.png" alt="" class="pixelated"><div><b>The 28-color palette</b>Left click for foreground, right click (or long-press) for background. Double-click a swatch to define your own color.</div></li>
+          <li><img src="assets/tools/text.png" alt="" class="pixelated"><div><b>Type right on the canvas</b>Drag a text box, type, move it and resize it — with a floating Fonts toolbar for font, size, bold, italic and underline.</div></li>
+          <li><img src="assets/tools/curve.png" alt="" class="pixelated"><div><b>Image menu classics</b>Flip/Rotate, Stretch/Skew, Invert Colors, Attributes and Clear Image — on the whole picture or just a selection.</div></li>
+          <li><img src="assets/tools/magnifier.png" alt="" class="pixelated"><div><b>Pixel-perfect</b>No smoothing, no anti-aliasing. Zoom up to 800% with a pixel grid and a thumbnail window.</div></li>
+          <li><img src="assets/tools/fill.png" alt="" class="pixelated"><div><b>Real files</b>Open and save PNG, BMP, JPEG, GIF and TIFF. Copy and paste with other apps, print, and share.</div></li>
+          <li><img src="assets/icon.png" alt="" class="pixelated"><div><b>Native on every screen</b>Built in SwiftUI with a shared drawing engine. Same app on Mac, iPad and iPhone.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Get the app -->
+    <section class="window" id="win-get" data-title="Get RetroPaint" data-icon="assets/tools/fill.png" hidden aria-labelledby="t-get">
+      <header class="title-bar"><img src="assets/tools/fill.png" alt="" class="pixelated"><span id="t-get">Get RetroPaint</span>
+        <div class="controls"><button class="min" aria-label="Minimize"></button><button class="max" aria-label="Maximize"></button><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="window-body">
+        <p>RetroPaint is open source. Build it with Xcode on a Mac:</p>
+        <pre class="code"><code>git clone https://github.com/harkhowalia-1/RetroPaint.git
+cd RetroPaint
+brew install xcodegen
+xcodegen generate
+open RetroPaint.xcodeproj</code></pre>
+        <p>Pick the <b>RetroPaint</b> scheme, choose <i>My Mac</i>, an iPad or an iPhone, and press <kbd>⌘R</kbd>.</p>
+        <p class="small">Requires macOS 14 / iOS 17 or later. To run on a physical device, select your Apple developer team under Signing.</p>
+        <div class="cta"><a class="xp-btn primary" href="https://github.com/harkhowalia-1/RetroPaint" target="_blank" rel="noopener">Open the repository</a></div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="window dialog" id="win-about" data-title="About RetroPaint" data-icon="assets/icon.png" hidden aria-labelledby="t-about">
+      <header class="title-bar"><span id="t-about">About RetroPaint</span>
+        <div class="controls"><button class="close" aria-label="Close"></button></div>
+      </header>
+      <div class="window-body about">
+        <img src="assets/icon.png" alt="" width="64" height="64" class="pixelated">
+        <div>
+          <p><b>RetroPaint</b> Version 1.0</p>
+          <p>A love letter to the bitmap editors of the early 2000s, written from scratch in Swift.</p>
+          <p class="small">RetroPaint is an independent project and is not affiliated with or endorsed by Microsoft. Windows and Paint are trademarks of Microsoft Corporation.</p>
+          <div class="cta"><button class="xp-btn primary close-dialog">OK</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Start menu -->
+  <div class="start-menu" id="start-menu" hidden>
+    <div class="sm-head"><img src="assets/icon.png" alt="" class="pixelated"><span>RetroPaint</span></div>
+    <div class="sm-body">
+      <div class="sm-left">
+        <button data-open="paint"><img src="assets/icon.png" alt="" class="pixelated"><span><b>RetroPaint</b><small>Draw in your browser</small></span></button>
+        <button data-open="screens"><img src="assets/tools/magnifier.png" alt="" class="pixelated"><span>Screenshots</span></button>
+        <button data-open="features"><img src="assets/tools/select.png" alt="" class="pixelated"><span>Features</span></button>
+        <button data-open="get"><img src="assets/tools/fill.png" alt="" class="pixelated"><span>Get the App</span></button>
+      </div>
+      <div class="sm-right">
+        <a href="https://github.com/harkhowalia-1/RetroPaint" target="_blank" rel="noopener">GitHub</a>
+        <button data-open="welcome">Read Me</button>
+        <button data-open="about">About</button>
+      </div>
+    </div>
+    <div class="sm-foot"><button id="turn-off">⏻ Turn Off</button></div>
+  </div>
+
+  <!-- Taskbar -->
+  <footer class="taskbar">
+    <button class="start" id="start-btn" aria-expanded="false" aria-controls="start-menu"><img src="assets/icon.png" alt="" class="pixelated"><span>start</span></button>
+    <div class="tasks" id="tasks"></div>
+    <div class="tray"><img src="assets/tools/brush.png" alt="" class="pixelated"><time id="clock"></time></div>
+  </footer>
+
+  <div class="safe-off" id="safe-off" hidden><p>It's now safe to close this tab.</p><small>(click anywhere to turn it back on)</small></div>
+
+  <script src="paint.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

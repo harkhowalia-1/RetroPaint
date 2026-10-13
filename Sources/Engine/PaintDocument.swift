@@ -980,6 +980,15 @@ final class PaintDocument: ObservableObject {
         load(Bitmap(width: 640, height: 480), url: nil)
     }
 
+    #if DEBUG
+    /// Debug builds only: `-demoImage <path>` opens a picture at launch (used for screenshots).
+    func loadDemoImageIfRequested() {
+        guard let path = UserDefaults.standard.string(forKey: "demoImage"),
+              let data = FileManager.default.contents(atPath: path), let b = Bitmap(data: data) else { return }
+        load(b, url: nil)
+    }
+    #endif
+
     private func load(_ b: Bitmap, url: URL?) {
         airbrushTimer?.invalidate()
         polygon = nil

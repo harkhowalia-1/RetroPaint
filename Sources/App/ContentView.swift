@@ -15,6 +15,9 @@ struct ContentView: View {
         }
         .environment(\.colorScheme, .light)
         .focusedSceneObject(doc)
+        #if DEBUG
+        .onAppear { doc.loadDemoImageIfRequested() }
+        #endif
         .navigationTitle("\(doc.fileName) - RetroPaint")
         .fileImporter(isPresented: Binding(get: { doc.importMode != nil }, set: { if !$0 { doc.importMode = nil } }),
                       allowedContentTypes: [.image]) { result in
