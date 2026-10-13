@@ -22,6 +22,8 @@ struct Selection {
 
 enum DialogKind: Identifiable {
     case attributes, flipRotate, stretchSkew, customZoom, editColors, about, helpTopics
+    case confirmNew
+    case message(String)
 
     var id: String { "\(self)" }
 }
@@ -44,6 +46,15 @@ protocol TextInputBridge: AnyObject {
     func focusText()
     func endTextEditing()
     func setTextSelection(_ range: NSRange)
+}
+
+/// What a pointer is over on an open text box.
+enum TextBoxHit: Equatable {
+    case inside
+    /// The dashed border: drag to move the box.
+    case border
+    /// A sizing handle; each flag says which edges follow the pointer.
+    case handle(left: Bool, top: Bool, right: Bool, bottom: Bool)
 }
 
 enum ImportMode { case open, pasteFrom }
@@ -119,8 +130,8 @@ final class PaintDocument: ObservableObject {
     @Published var dialog: DialogKind?
     @Published var importMode: ImportMode?
     @Published var exportMode: ExportMode?
-    @Published var confirmingNew = false
-    @Published var errorMessage: String?
+    /// Start a new picture once a Save As triggered by "Save changes?" completes.
+    private var newAfterSave = false
     /// Image point the canvas should scroll to centre, then clear.
     @Published var pendingScrollCenter: CGPoint?
 
@@ -141,6 +152,8 @@ final class PaintDocument: ObservableObject {
         case lasso
         case moveSelection(grab: IntPoint)
         case textSelect(anchor: Int)
+        case textMove(grab: CGPoint, start: IntRect)
+        case textResize(TextBoxHit, from: CGPoint, start: IntRect)
         case resize(ResizeHandle)
         case polygon
         case curve
@@ -299,10 +312,17 @@ final class PaintDocument: ObservableObject {
             gesture = .shape(start: ip, base: image, button: button)
             renderShape(from: ip, to: ip, button: button)
         case .text:
-            if let box = textBox, box.rect.contains(ip) {
-                let idx = textIndex(at: p)
-                setTextSelection(NSRange(location: idx, length: 0))
-                gesture = .textSelect(anchor: idx)
+            if let box = textBox, let hit = textBoxHit(at: p) {
+                switch hit {
+                case .border:
+                    gesture = .textMove(grab: CGPoint(x: p.x - CGFloat(box.rect.x), y: p.y - CGFloat(box.rect.y)), start: box.rect)
+                case .handle:
+                    gesture = .textResize(hit, from: p, start: box.rect)
+                case .inside:
+                    let idx = textIndex(at: p)
+                    setTextSelection(NSRange(location: idx, length: 0))
+                    gesture = .textSelect(anchor: idx)
+                }
             } else {
                 // As in XP, a click outside an open box only finishes it; a drag still starts a new one.
                 textClickCommits = textBox != nil
@@ -379,6 +399,22 @@ final class PaintDocument: ObservableObject {
         case .textSelect(let anchor):
             let idx = textIndex(at: p)
             setTextSelection(NSRange(location: min(anchor, idx), length: abs(idx - anchor)))
+        case .textMove(let grab, let start):
+            var r = start
+            r.x = min(max(0, Int((p.x - grab.x).rounded())), image.width - r.width)
+            r.y = min(max(0, Int((p.y - grab.y).rounded())), image.height - r.height)
+            moveTextBox(to: r)
+        case .textResize(let hit, let from, let start):
+            guard case .handle(let left, let top, let right, let bottom) = hit else { break }
+            let dx = Int((p.x - from.x).rounded()), dy = Int((p.y - from.y).rounded())
+            var x0 = start.x, y0 = start.y, x1 = start.maxX, y1 = start.maxY
+            let minSize = 12
+            if left { x0 = min(max(0, x0 + dx), x1 - minSize) }
+            if right { x1 = max(min(image.width, x1 + dx), x0 + minSize) }
+            if top { y0 = min(max(0, y0 + dy), y1 - minSize) }
+            if bottom { y1 = max(min(image.height, y1 + dy), y0 + minSize) }
+            moveTextBox(to: IntRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0))
+            status.extent = IntSize(width: x1 - x0, height: y1 - y0)
         case .marquee(let start):
             let r = IntRect(corner: start, ip)
             marquee = r
@@ -868,6 +904,45 @@ final class PaintDocument: ObservableObject {
         return layout(for: box).index(at: CGPoint(x: p.x - CGFloat(box.rect.x), y: p.y - CGFloat(box.rect.y)))
     }
 
+    private func moveTextBox(to r: IntRect) {
+        guard textBox != nil else { return }
+        textBox?.rect = r
+        renderTextBox()
+        textInput?.focusText()
+    }
+
+    /// Distance, in view points, within which the pointer catches a border or handle.
+    var pointerSlop: CGFloat = 4
+
+    /// Handle centres around a text box, in image pixels, with the edges each one drags.
+    static func textHandles(_ r: IntRect) -> [(CGPoint, TextBoxHit)] {
+        let x0 = CGFloat(r.x), y0 = CGFloat(r.y), x1 = CGFloat(r.maxX), y1 = CGFloat(r.maxY)
+        let mx = (x0 + x1) / 2, my = (y0 + y1) / 2
+        return [
+            (CGPoint(x: x0, y: y0), .handle(left: true, top: true, right: false, bottom: false)),
+            (CGPoint(x: mx, y: y0), .handle(left: false, top: true, right: false, bottom: false)),
+            (CGPoint(x: x1, y: y0), .handle(left: false, top: true, right: true, bottom: false)),
+            (CGPoint(x: x1, y: my), .handle(left: false, top: false, right: true, bottom: false)),
+            (CGPoint(x: x1, y: y1), .handle(left: false, top: false, right: true, bottom: true)),
+            (CGPoint(x: mx, y: y1), .handle(left: false, top: false, right: false, bottom: true)),
+            (CGPoint(x: x0, y: y1), .handle(left: true, top: false, right: false, bottom: true)),
+            (CGPoint(x: x0, y: my), .handle(left: true, top: false, right: false, bottom: false)),
+        ]
+    }
+
+    /// What part of the open text box, if any, is under an image point.
+    func textBoxHit(at p: CGPoint) -> TextBoxHit? {
+        guard let box = textBox else { return nil }
+        let slop = max(pointerSlop, 3) / CGFloat(zoom) + 1
+        for (c, hit) in Self.textHandles(box.rect) where abs(p.x - c.x) <= slop + 1 && abs(p.y - c.y) <= slop + 1 {
+            return hit
+        }
+        let r = CGRect(x: box.rect.x, y: box.rect.y, width: box.rect.width, height: box.rect.height)
+        if r.insetBy(dx: slop / 2, dy: slop / 2).contains(p) { return .inside }
+        if r.insetBy(dx: -slop, dy: -slop).contains(p) { return .border }
+        return nil
+    }
+
     /// Caret and selection highlight for the canvas overlay, in image pixels.
     func textOverlay() -> (box: IntRect, caret: CGRect?, highlights: [CGRect])? {
         guard let box = textBox else { return nil }
@@ -892,10 +967,16 @@ final class PaintDocument: ObservableObject {
     // MARK: Files
 
     func requestNew() {
-        if isDirty { confirmingNew = true } else { newImage() }
+        if isDirty { dialog = .confirmNew } else { newImage() }
+    }
+
+    func saveThenNew() {
+        save()
+        if isDirty { newAfterSave = true } else { newImage() }
     }
 
     func newImage() {
+        newAfterSave = false
         load(Bitmap(width: 640, height: 480), url: nil)
     }
 
@@ -921,7 +1002,7 @@ final class PaintDocument: ObservableObject {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let data = try? Data(contentsOf: url), let b = Bitmap(data: data) else {
-            errorMessage = "Paint cannot read this file.\nThis is not a valid bitmap file, or its format is not currently supported."
+            dialog = .message("RetroPaint cannot read this file.\nThis is not a valid bitmap file, or its format is not currently supported.")
             return
         }
         switch mode {
@@ -940,10 +1021,11 @@ final class PaintDocument: ObservableObject {
     }
 
     func handleExport(_ result: Result<URL, Error>, mode: ExportMode) {
-        guard mode == .saveAs, case .success(let url) = result else { return }
+        guard mode == .saveAs, case .success(let url) = result else { newAfterSave = false; return }
         fileURL = url
         fileName = url.lastPathComponent
         isDirty = false
+        if newAfterSave { newImage() }
     }
 
     func save() {

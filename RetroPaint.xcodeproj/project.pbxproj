@@ -11,6 +11,7 @@
 		14842DE75FDF0187F7915B4D /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948257307F8859DEF0230874 /* Tools.swift */; };
 		1976B0B1D510515CC34A4F08 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88A8275B36A422A31AC4774 /* Platform.swift */; };
 		5B5E0C722957BC28BCC31522 /* Dialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E40C5F4F1DF073F2B41956D /* Dialogs.swift */; };
+		5F4A159B11774594CE517DC2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 80F6FB8794D4FCA719367686 /* Assets.xcassets */; };
 		6558AA1E543FF515B890BAFB /* RetroPaintApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDAA2B263ADAA388A66C392 /* RetroPaintApp.swift */; };
 		66BA86F246D8C2363C525D08 /* PaintDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7646EAA810DE08BF2EE7F28 /* PaintDocument.swift */; };
 		81CC2E15A00BCB8EAC58CF5F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01DCF39A864734838CA30C8 /* ContentView.swift */; };
@@ -34,6 +35,7 @@
 		3F2613B856F2051A9009616E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		6A9BC102C0EF1F2BC7EC0FA9 /* Bitmap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bitmap.swift; sourceTree = "<group>"; };
 		7CB92718DF561DDE309ADE2E /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		80F6FB8794D4FCA719367686 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		948257307F8859DEF0230874 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		A01DCF39A864734838CA30C8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A4F33FB267D175A312FBDE8E /* ToolBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolBox.swift; sourceTree = "<group>"; };
@@ -49,6 +51,7 @@
 		332426455702D46FF9F307BF /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				80F6FB8794D4FCA719367686 /* Assets.xcassets */,
 				BF2C75D7761E6A51C19EA39F /* App */,
 				D7C8FDB7382492E88E1ED7E9 /* Canvas */,
 				B4BE493157F6C01727E90C6E /* Engine */,
@@ -133,6 +136,7 @@
 			buildConfigurationList = 9D7C94B49D29EE069F5925BD /* Build configuration list for PBXNativeTarget "RetroPaint" */;
 			buildPhases = (
 				522F8493DE33079B68E42D91 /* Sources */,
+				12B6D74224D39AA85C7B59D4 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -177,6 +181,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		12B6D74224D39AA85C7B59D4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5F4A159B11774594CE517DC2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		522F8493DE33079B68E42D91 /* Sources */ = {

@@ -12,9 +12,7 @@ struct FontsToolbar: View {
     var body: some View {
         VStack(spacing: 0) {
             if showsTitle {
-                Text("Fonts").font(XP.font).bold().foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4).frame(height: 16).background(XP.selection)
+                XPTitleBar(title: "Fonts", toolWindow: true) { doc.showTextToolbar = false }
             }
             HStack(spacing: 4) {
                 Menu {
@@ -36,6 +34,7 @@ struct FontsToolbar: View {
                 styleButton(Text("B").bold(), isOn: $doc.textStyle.bold)
                 styleButton(Text("I").italic(), isOn: $doc.textStyle.italic)
                 styleButton(Text("U").underline(), isOn: $doc.textStyle.underline)
+                if !showsTitle { XPCloseButton(size: 18) { doc.showTextToolbar = false } }
             }
             .padding(4)
         }

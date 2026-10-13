@@ -112,3 +112,58 @@ private struct RightClickCatcher: NSViewRepresentable {
     func updateNSView(_ v: CatcherView, context: Context) { v.action = action }
 }
 #endif
+
+/// Luna-style window title bar with a close box.
+struct XPTitleBar: View {
+    let title: String
+    /// Smaller bar used by tool windows such as Fonts and Thumbnail.
+    var toolWindow = false
+    let onClose: () -> Void
+
+    static let gradient = LinearGradient(
+        colors: [Color(red: 0.0, green: 0.33, blue: 0.89), Color(red: 0.24, green: 0.58, blue: 1.0)],
+        startPoint: .leading, endPoint: .trailing)
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(toolWindow ? XP.font.bold() : .system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            XPCloseButton(size: toolWindow ? 15 : 21, action: onClose)
+        }
+        .padding(.leading, 6)
+        .padding(.trailing, toolWindow ? 2 : 4)
+        .frame(height: toolWindow ? 19 : 29)
+        .background(Self.gradient)
+    }
+}
+
+/// The red ✕ close box from the Luna title bar.
+struct XPCloseButton: View {
+    var size: CGFloat = 21
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.18)
+                    .fill(LinearGradient(colors: [Color(red: 0.93, green: 0.52, blue: 0.40), Color(red: 0.78, green: 0.25, blue: 0.12)],
+                                         startPoint: .top, endPoint: .bottom))
+                RoundedRectangle(cornerRadius: size * 0.18).strokeBorder(Color.white, lineWidth: 1)
+                Canvas { ctx, s in
+                    var p = Path()
+                    let a = s.width * 0.3, b = s.width * 0.7
+                    p.move(to: CGPoint(x: a, y: a)); p.addLine(to: CGPoint(x: b, y: b))
+                    p.move(to: CGPoint(x: b, y: a)); p.addLine(to: CGPoint(x: a, y: b))
+                    ctx.stroke(p, with: .color(.white), style: StrokeStyle(lineWidth: max(1.5, s.width * 0.12), lineCap: .square))
+                }
+            }
+            .frame(width: size, height: size)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
+    }
+}

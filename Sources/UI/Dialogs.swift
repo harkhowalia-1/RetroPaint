@@ -1,5 +1,43 @@
 import SwiftUI
 
+private struct CloseDialogKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    /// Closes the XP-style window this view is shown in.
+    var closeDialog: () -> Void {
+        get { self[CloseDialogKey.self] }
+        set { self[CloseDialogKey.self] = newValue }
+    }
+}
+
+/// Shows the current dialog as a centred XP window over the app, instead of a system sheet.
+struct DialogLayer: View {
+    @ObservedObject var doc: PaintDocument
+
+    var body: some View {
+        if let kind = doc.dialog {
+            ZStack {
+                // Blocks clicks to the app behind, like a modal window.
+                Color.black.opacity(0.12).ignoresSafeArea().contentShape(Rectangle()).onTapGesture {}
+                DialogHost(doc: doc, kind: kind)
+                    .environment(\.closeDialog) { doc.dialog = nil }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 480)
+                    .clipShape(UnevenRoundedRectangle(topLeadingRadius: 7, topTrailingRadius: 7))
+                    .overlay(UnevenRoundedRectangle(topLeadingRadius: 7, topTrailingRadius: 7)
+                        .strokeBorder(Color(red: 0.0, green: 0.19, blue: 0.85), lineWidth: 3))
+                    .shadow(color: .black.opacity(0.35), radius: 10, x: 3, y: 5)
+                    .padding(16)
+                    .id(kind.id)
+            }
+            .environment(\.colorScheme, .light)
+            .transition(.opacity)
+        }
+    }
+}
+
 /// Classic dialog chrome: beige face, title, OK/Cancel on the right.
 struct XPDialog<Content: View>: View {
     let title: String
@@ -7,18 +45,11 @@ struct XPDialog<Content: View>: View {
     var showsCancel = true
     let onOK: () -> Void
     @ViewBuilder let content: () -> Content
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.closeDialog) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(title).font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .frame(height: 26)
-            .background(LinearGradient(colors: [Color(red: 0.0, green: 0.33, blue: 0.89), Color(red: 0.24, green: 0.58, blue: 1.0)],
-                                       startPoint: .leading, endPoint: .trailing))
+            XPTitleBar(title: title) { dismiss() }
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 10) { content() }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,7 +64,6 @@ struct XPDialog<Content: View>: View {
         .foregroundStyle(.black)
         .background(XP.face)
         .frame(minWidth: 320)
-        .presentationDetents([.medium, .large])
     }
 }
 
@@ -123,6 +153,11 @@ struct DialogHost: View {
         case .editColors: EditColorsDialog(doc: doc)
         case .about: AboutDialog()
         case .helpTopics: HelpDialog()
+        case .confirmNew:
+            XPMessageBox(title: "RetroPaint", message: "Save changes to \(doc.fileName)?", symbol: "exclamationmark.triangle.fill",
+                         buttons: [("Yes", { doc.saveThenNew() }), ("No", { doc.newImage() }), ("Cancel", {})])
+        case .message(let text):
+            XPMessageBox(title: "RetroPaint", message: text, symbol: "exclamationmark.triangle.fill", buttons: [("OK", {})])
         }
     }
 }
@@ -284,5 +319,40 @@ struct HelpDialog: View {
             }
             .frame(maxHeight: 360)
         }
+    }
+}
+
+/// A classic message box: title bar with close box, icon and message, buttons centred below.
+struct XPMessageBox: View {
+    let title: String
+    let message: String
+    let symbol: String
+    let buttons: [(String, () -> Void)]
+    @Environment(\.closeDialog) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            XPTitleBar(title: title) { dismiss() }
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: symbol)
+                    .font(.system(size: 30))
+                    .symbolRenderingMode(.multicolor)
+                    .foregroundStyle(.yellow)
+                Text(message).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            HStack(spacing: 8) {
+                ForEach(buttons.indices, id: \.self) { i in
+                    XPButton(buttons[i].0) { buttons[i].1(); dismiss() }
+                        .keyboardShortcut(i == 0 ? KeyboardShortcut.defaultAction : (buttons[i].0 == "Cancel" ? KeyboardShortcut.cancelAction : nil))
+                }
+            }
+            .padding(.bottom, 14)
+        }
+        .font(XP.font)
+        .foregroundStyle(.black)
+        .background(XP.face)
+        .frame(minWidth: 320)
     }
 }

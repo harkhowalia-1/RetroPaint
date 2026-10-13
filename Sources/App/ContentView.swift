@@ -28,17 +28,7 @@ struct ContentView: View {
             if let mode = doc.exportMode { doc.handleExport(result, mode: mode) }
             doc.exportMode = nil
         }
-        .sheet(item: $doc.dialog) { DialogHost(doc: doc, kind: $0).environment(\.colorScheme, .light) }
-        .confirmationDialog("Save changes to \(doc.fileName)?", isPresented: $doc.confirmingNew, titleVisibility: .visible) {
-            Button("Save") { doc.save() }
-            Button("Don't Save", role: .destructive) { doc.newImage() }
-            Button("Cancel", role: .cancel) {}
-        }
-        .alert("RetroPaint", isPresented: Binding(get: { doc.errorMessage != nil }, set: { if !$0 { doc.errorMessage = nil } })) {
-            Button("OK") {}
-        } message: {
-            Text(doc.errorMessage ?? "")
-        }
+        .overlay { DialogLayer(doc: doc) }
         .overlay { if doc.viewingBitmap { BitmapViewer(doc: doc) } }
     }
 }
@@ -162,13 +152,12 @@ struct Thumbnail: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Thumbnail").font(XP.font).foregroundStyle(.white).frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 4).frame(height: 16).background(XP.selection)
+            XPTitleBar(title: "Thumbnail", toolWindow: true) { doc.showThumbnail = false }
             if let img = doc.cgImage {
                 Image(decorative: img, scale: 1).interpolation(.none).resizable().aspectRatio(contentMode: .fit)
             }
         }
-        .frame(width: 160, height: 136)
+        .frame(width: 160, height: 139)
         .background(XP.face)
         .overlay(Bevel(style: .raised))
         .padding(12)

@@ -87,6 +87,11 @@ enum CanvasRenderer {
             if let c = t.caret { var r = toView(c); r.size.width = max(1, z / 2); ctx.fill(r) }
             ctx.restoreGState()
             dashed(viewRect(t.box).insetBy(dx: -0.5, dy: -0.5), ctx)
+            ctx.setFillColor(CanvasColors.handle)
+            let hs = CanvasGeometry.handleSize
+            for (c, _) in PaintDocument.textHandles(t.box) {
+                ctx.fill(CGRect(x: rect.minX + c.x * z - hs / 2, y: rect.minY + c.y * z - hs / 2, width: hs, height: hs))
+            }
         }
 
         if doc.lassoPoints.count > 1 {

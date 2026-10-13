@@ -151,9 +151,15 @@ final class CanvasNSView: NSView, TextInputBridge, NSTextViewDelegate {
             case .bottom: NSCursor.resizeUpDown.set()
             case .corner: NSCursor.crosshair.set()
             }
-        } else if doc.tool == .text, let box = doc.textBox,
-                  box.rect.contains(IntPoint(Int(floor(imagePoint(e).x)), Int(floor(imagePoint(e).y)))) {
-            NSCursor.iBeam.set()
+        } else if doc.tool == .text, let hit = doc.textBoxHit(at: imagePoint(e)) {
+            switch hit {
+            case .inside: NSCursor.iBeam.set()
+            case .border: NSCursor.openHand.set()
+            case .handle(let l, let t, let r, let b):
+                if (l || r) && (t || b) { NSCursor.crosshair.set() }
+                else if l || r { NSCursor.resizeLeftRight.set() }
+                else { NSCursor.resizeUpDown.set() }
+            }
         } else if CanvasGeometry.imageRect(doc.canvasSize, zoom: doc.zoom).contains(location(e)) {
             ToolCursors.cursor(for: doc.tool).set()
         } else {
@@ -360,6 +366,7 @@ final class CanvasScrollView: UIScrollView, UIScrollViewDelegate, UITextViewDele
         let mods = event?.modifierFlags ?? []
         let secondary = event?.buttonMask.contains(.secondary) ?? false
         let slop: CGFloat = t.type == .direct ? 10 : 3
+        doc.pointerSlop = t.type == .direct ? 14 : 4
         let handle = CanvasGeometry.handle(at: t.location(in: self), size: doc.canvasSize, zoom: doc.zoom, slop: slop)
         doc.pointerDown(imagePoint(t), handle: handle, button: secondary ? .secondary : .primary,
                         shift: mods.contains(.shift), duplicate: mods.contains(.control) || mods.contains(.alternate),
