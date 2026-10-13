@@ -55,6 +55,10 @@ Choose the **RetroPaint** scheme, pick *My Mac*, an iPad or an iPhone simulator,
 | `Tools/` | Scripts that draw the app icon and the website assets with the app's own engine |
 | `docs/` | The website (GitHub Pages), including a small in-browser version of the editor |
 
+## License
+
+RetroPaint is released under the [MIT License](LICENSE).
+
 ## Disclaimer
 
 RetroPaint is an independent, from-scratch project inspired by the bitmap editors of the early 2000s. It contains no code or artwork from any other product and is not affiliated with or endorsed by Microsoft. Windows and Paint are trademarks of Microsoft Corporation.
