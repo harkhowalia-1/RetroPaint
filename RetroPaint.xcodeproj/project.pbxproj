@@ -14,8 +14,10 @@
 		6558AA1E543FF515B890BAFB /* RetroPaintApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDAA2B263ADAA388A66C392 /* RetroPaintApp.swift */; };
 		66BA86F246D8C2363C525D08 /* PaintDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7646EAA810DE08BF2EE7F28 /* PaintDocument.swift */; };
 		81CC2E15A00BCB8EAC58CF5F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01DCF39A864734838CA30C8 /* ContentView.swift */; };
+		85CBAD68303DC01E67976D57 /* TextLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD29A6D3FF5981B6E49815CB /* TextLayout.swift */; };
 		92A64783AA572B7221496252 /* Menus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18BAA3305B59BFEC66297567 /* Menus.swift */; };
 		96543A183F17F0BF7A9FF2FF /* Bitmap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9BC102C0EF1F2BC7EC0FA9 /* Bitmap.swift */; };
+		B14875307C0C1C84D91DCFE1 /* FontsToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7BD8C3182A0B46D9CF6DAF /* FontsToolbar.swift */; };
 		B6E893F5BC47BD31E4084C60 /* ToolIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0471105CB5C5C0F8B34E1F3B /* ToolIcons.swift */; };
 		D28E8F9D5AA3173787D049D3 /* CanvasRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51BA531E71734C3BA17736E /* CanvasRenderer.swift */; };
 		D990129445DDB2BEC0FC8751 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB92718DF561DDE309ADE2E /* CanvasView.swift */; };
@@ -27,6 +29,7 @@
 		0471105CB5C5C0F8B34E1F3B /* ToolIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolIcons.swift; sourceTree = "<group>"; };
 		0E40C5F4F1DF073F2B41956D /* Dialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dialogs.swift; sourceTree = "<group>"; };
 		18BAA3305B59BFEC66297567 /* Menus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menus.swift; sourceTree = "<group>"; };
+		1B7BD8C3182A0B46D9CF6DAF /* FontsToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontsToolbar.swift; sourceTree = "<group>"; };
 		3E5E837C4BAB7F4EE64BC2F5 /* ColorBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorBox.swift; sourceTree = "<group>"; };
 		3F2613B856F2051A9009616E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		6A9BC102C0EF1F2BC7EC0FA9 /* Bitmap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bitmap.swift; sourceTree = "<group>"; };
@@ -35,6 +38,7 @@
 		A01DCF39A864734838CA30C8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A4F33FB267D175A312FBDE8E /* ToolBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolBox.swift; sourceTree = "<group>"; };
 		AFDAA2B263ADAA388A66C392 /* RetroPaintApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroPaintApp.swift; sourceTree = "<group>"; };
+		BD29A6D3FF5981B6E49815CB /* TextLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextLayout.swift; sourceTree = "<group>"; };
 		C7646EAA810DE08BF2EE7F28 /* PaintDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintDocument.swift; sourceTree = "<group>"; };
 		C88A8275B36A422A31AC4774 /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		D51BA531E71734C3BA17736E /* CanvasRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasRenderer.swift; sourceTree = "<group>"; };
@@ -59,6 +63,7 @@
 			children = (
 				3E5E837C4BAB7F4EE64BC2F5 /* ColorBox.swift */,
 				0E40C5F4F1DF073F2B41956D /* Dialogs.swift */,
+				1B7BD8C3182A0B46D9CF6DAF /* FontsToolbar.swift */,
 				18BAA3305B59BFEC66297567 /* Menus.swift */,
 				3F2613B856F2051A9009616E /* Theme.swift */,
 				A4F33FB267D175A312FBDE8E /* ToolBox.swift */,
@@ -80,6 +85,7 @@
 			children = (
 				6A9BC102C0EF1F2BC7EC0FA9 /* Bitmap.swift */,
 				C7646EAA810DE08BF2EE7F28 /* PaintDocument.swift */,
+				BD29A6D3FF5981B6E49815CB /* TextLayout.swift */,
 				948257307F8859DEF0230874 /* Tools.swift */,
 			);
 			path = Engine;
@@ -183,10 +189,12 @@
 				0461CFBB473F0E7FE7974BF6 /* ColorBox.swift in Sources */,
 				81CC2E15A00BCB8EAC58CF5F /* ContentView.swift in Sources */,
 				5B5E0C722957BC28BCC31522 /* Dialogs.swift in Sources */,
+				B14875307C0C1C84D91DCFE1 /* FontsToolbar.swift in Sources */,
 				92A64783AA572B7221496252 /* Menus.swift in Sources */,
 				66BA86F246D8C2363C525D08 /* PaintDocument.swift in Sources */,
 				1976B0B1D510515CC34A4F08 /* Platform.swift in Sources */,
 				6558AA1E543FF515B890BAFB /* RetroPaintApp.swift in Sources */,
+				85CBAD68303DC01E67976D57 /* TextLayout.swift in Sources */,
 				FC3A51B20A37E56D347CD331 /* Theme.swift in Sources */,
 				E48B15A7D5BEFBDDF67BC1B3 /* ToolBox.swift in Sources */,
 				B6E893F5BC47BD31E4084C60 /* ToolIcons.swift in Sources */,

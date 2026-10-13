@@ -7,7 +7,7 @@ struct MenuSet {
     /// True when building system commands, which own the keyboard shortcuts.
     var commands: Bool
 
-    private var editingText: Bool { doc.dialog != nil }
+    private var editingText: Bool { doc.dialog != nil || doc.isEditingText }
 
     @ViewBuilder var file: some View {
         Button("New") { doc.requestNew() }.shortcut("n", if: commands)
@@ -28,14 +28,14 @@ struct MenuSet {
 
     @ViewBuilder var edit: some View {
         Button("Undo") { editingText ? StandardEdit.undo.send() : doc.undo() }
-            .shortcut("z", if: commands).disabled(!commands && !doc.canUndo)
+            .shortcut("z", if: commands).disabled(!commands && !doc.canUndo && !editingText)
         Button("Repeat") { editingText ? StandardEdit.redo.send() : doc.redo() }
             .shortcut("y", if: commands).disabled(!commands && !doc.canRedo)
         Divider()
         Button("Cut") { editingText ? StandardEdit.cut.send() : doc.cut() }
-            .shortcut("x", if: commands).disabled(!commands && !doc.hasSelection)
+            .shortcut("x", if: commands).disabled(!commands && !doc.hasSelection && !editingText)
         Button("Copy") { editingText ? StandardEdit.copy.send() : doc.copy() }
-            .shortcut("c", if: commands).disabled(!commands && !doc.hasSelection)
+            .shortcut("c", if: commands).disabled(!commands && !doc.hasSelection && !editingText)
         Button("Paste") { editingText ? StandardEdit.paste.send() : doc.paste() }.shortcut("v", if: commands)
         Button("Clear Selection") { doc.deleteSelection() }.disabled(!doc.hasSelection)
         Button("Select All") { editingText ? StandardEdit.selectAll.send() : doc.selectAll() }.shortcut("a", if: commands)
@@ -48,6 +48,7 @@ struct MenuSet {
         Toggle("Tool Box", isOn: $doc.showToolBox).shortcut("t", if: commands)
         Toggle("Color Box", isOn: $doc.showColorBox).shortcut("l", if: commands)
         Toggle("Status Bar", isOn: $doc.showStatusBar)
+        Toggle("Text Toolbar", isOn: $doc.showTextToolbar)
         Divider()
         Menu("Zoom") {
             Button("Normal Size") { doc.setZoom(1) }.shortcut(.pageUp, if: commands)

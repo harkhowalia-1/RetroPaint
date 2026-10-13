@@ -7,9 +7,29 @@ private final class FlippedClipView: NSClipView {
     override var isFlipped: Bool { true }
 }
 
-final class CanvasNSView: NSView {
+/// Invisible text view that receives typing for the Text tool; the canvas draws the result.
+private final class HiddenTextView: NSTextView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+final class CanvasNSView: NSView, TextInputBridge, NSTextViewDelegate {
     let doc: PaintDocument
     private var activeButton: PointerButton?
+    private var syncingText = false
+
+    private lazy var textView: HiddenTextView = {
+        let tv = HiddenTextView(frame: .zero)
+        tv.alphaValue = 0
+        tv.isRichText = false
+        tv.allowsUndo = true
+        tv.isAutomaticQuoteSubstitutionEnabled = false
+        tv.isAutomaticDashSubstitutionEnabled = false
+        tv.isAutomaticTextReplacementEnabled = false
+        tv.isAutomaticSpellingCorrectionEnabled = false
+        tv.isContinuousSpellCheckingEnabled = false
+        tv.delegate = self
+        return tv
+    }()
 
     init(doc: PaintDocument) {
         self.doc = doc
@@ -17,6 +37,56 @@ final class CanvasNSView: NSView {
     }
 
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: Text input bridge
+
+    func positionTextView() {
+        guard let box = doc.textBox else { return }
+        let r = CanvasGeometry.imageRect(doc.canvasSize, zoom: doc.zoom), z = CGFloat(doc.zoom)
+        textView.frame = CGRect(x: r.minX + CGFloat(box.rect.x) * z, y: r.minY + CGFloat(box.rect.y) * z,
+                                width: CGFloat(box.rect.width) * z, height: CGFloat(box.rect.height) * z)
+    }
+
+    func beginTextEditing() {
+        if textView.superview == nil { addSubview(textView) }
+        syncingText = true
+        textView.string = ""
+        syncingText = false
+        positionTextView()
+        focusText()
+    }
+
+    func focusText() {
+        if window?.firstResponder !== textView { window?.makeFirstResponder(textView) }
+    }
+
+    func endTextEditing() {
+        if window?.firstResponder === textView { window?.makeFirstResponder(self) }
+        textView.removeFromSuperview()
+    }
+
+    func setTextSelection(_ range: NSRange) {
+        let len = (textView.string as NSString).length
+        syncingText = true
+        textView.setSelectedRange(NSRange(location: min(range.location, len), length: min(range.length, len - min(range.location, len))))
+        syncingText = false
+        focusText()
+    }
+
+    func textDidChange(_ notification: Notification) {
+        guard !syncingText else { return }
+        doc.textDidChange(textView.string, selection: textView.selectedRange())
+    }
+
+    func textViewDidChangeSelection(_ notification: Notification) {
+        guard !syncingText else { return }
+        doc.textSelectionDidChange(textView.selectedRange())
+    }
+
+    func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        if selector == #selector(cancelOperation(_:)) { doc.commitText(); return true }
+        return false
+    }
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -81,6 +151,9 @@ final class CanvasNSView: NSView {
             case .bottom: NSCursor.resizeUpDown.set()
             case .corner: NSCursor.crosshair.set()
             }
+        } else if doc.tool == .text, let box = doc.textBox,
+                  box.rect.contains(IntPoint(Int(floor(imagePoint(e).x)), Int(floor(imagePoint(e).y)))) {
+            NSCursor.iBeam.set()
         } else if CanvasGeometry.imageRect(doc.canvasSize, zoom: doc.zoom).contains(location(e)) {
             ToolCursors.cursor(for: doc.tool).set()
         } else {
@@ -130,7 +203,11 @@ struct CanvasHost: NSViewRepresentable {
         scroll.drawsBackground = true
         let canvas = CanvasNSView(doc: doc)
         scroll.documentView = canvas
-        doc.onCanvasChange = { [weak canvas] in canvas?.needsDisplay = true }
+        doc.onCanvasChange = { [weak canvas] in
+            canvas?.needsDisplay = true
+            canvas?.positionTextView()
+        }
+        doc.textInput = canvas
         return scroll
     }
 
@@ -156,9 +233,35 @@ import UIKit
 
 /// A scroll view that is also the drawing surface: it repaints its visible
 /// bounds on every scroll, so the backing store never exceeds the screen.
-final class CanvasScrollView: UIScrollView, UIScrollViewDelegate {
+/// Invisible text view that receives typing for the Text tool; the canvas draws the result.
+private final class HiddenTextView: UITextView {
+    var onEscape: (() -> Void)?
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        if presses.first?.key?.keyCode == .keyboardEscape { onEscape?(); return }
+        super.pressesBegan(presses, with: event)
+    }
+}
+
+final class CanvasScrollView: UIScrollView, UIScrollViewDelegate, UITextViewDelegate, TextInputBridge {
     let doc: PaintDocument
     private var activeTouch: UITouch?
+    private var syncingText = false
+
+    private lazy var textView: HiddenTextView = {
+        let tv = HiddenTextView(frame: .zero)
+        tv.alpha = 0
+        tv.autocorrectionType = .no
+        tv.autocapitalizationType = .none
+        tv.spellCheckingType = .no
+        tv.smartQuotesType = .no
+        tv.smartDashesType = .no
+        tv.smartInsertDeleteType = .no
+        tv.inlinePredictionType = .no
+        tv.isScrollEnabled = false
+        tv.delegate = self
+        tv.onEscape = { [weak self] in self?.doc.commitText() }
+        return tv
+    }()
 
     init(doc: PaintDocument) {
         self.doc = doc
@@ -176,6 +279,51 @@ final class CanvasScrollView: UIScrollView, UIScrollViewDelegate {
     }
 
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: Text input bridge
+
+    func positionTextView() {
+        guard let box = doc.textBox else { return }
+        let r = CanvasGeometry.imageRect(doc.canvasSize, zoom: doc.zoom), z = CGFloat(doc.zoom)
+        textView.frame = CGRect(x: r.minX + CGFloat(box.rect.x) * z, y: r.minY + CGFloat(box.rect.y) * z,
+                                width: CGFloat(box.rect.width) * z, height: CGFloat(box.rect.height) * z)
+    }
+
+    func beginTextEditing() {
+        if textView.superview == nil { addSubview(textView) }
+        syncingText = true
+        textView.text = ""
+        syncingText = false
+        positionTextView()
+        focusText()
+    }
+
+    func focusText() {
+        if !textView.isFirstResponder { textView.becomeFirstResponder() }
+    }
+
+    func endTextEditing() {
+        textView.resignFirstResponder()
+        textView.removeFromSuperview()
+    }
+
+    func setTextSelection(_ range: NSRange) {
+        let len = (textView.text as NSString).length
+        syncingText = true
+        textView.selectedRange = NSRange(location: min(range.location, len), length: min(range.length, len - min(range.location, len)))
+        syncingText = false
+        focusText()
+    }
+
+    func textViewDidChange(_ textView: UITextView) {
+        guard !syncingText else { return }
+        doc.textDidChange(textView.text, selection: textView.selectedRange)
+    }
+
+    func textViewDidChangeSelection(_ textView: UITextView) {
+        guard !syncingText else { return }
+        doc.textSelectionDidChange(textView.selectedRange)
+    }
 
     override var canBecomeFirstResponder: Bool { true }
 
@@ -207,7 +355,7 @@ final class CanvasScrollView: UIScrollView, UIScrollViewDelegate {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard activeTouch == nil, let t = touches.first, (event?.allTouches?.count ?? 1) == 1 else { return }
-        becomeFirstResponder()
+        if !doc.isEditingText { becomeFirstResponder() }
         activeTouch = t
         let mods = event?.modifierFlags ?? []
         let secondary = event?.buttonMask.contains(.secondary) ?? false
@@ -250,7 +398,11 @@ struct CanvasHost: UIViewRepresentable {
 
     func makeUIView(context: Context) -> CanvasScrollView {
         let view = CanvasScrollView(doc: doc)
-        doc.onCanvasChange = { [weak view] in view?.setNeedsDisplay() }
+        doc.onCanvasChange = { [weak view] in
+            view?.setNeedsDisplay()
+            view?.positionTextView()
+        }
+        doc.textInput = view
         return view
     }
 

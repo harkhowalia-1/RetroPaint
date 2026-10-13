@@ -379,7 +379,8 @@ struct Bitmap: Equatable {
 
     // MARK: Text
 
-    mutating func drawText(_ text: String, in rect: IntRect, font: CTFont, underline: Bool, color: RGBA) {
+    /// Draws laid-out text with its top-left at `origin`, clipped to the layout box. No anti-aliasing.
+    mutating func drawText(_ layout: TextLayout, at origin: IntPoint) {
         let w = width, h = height
         pixels.withUnsafeMutableBytes { buf in
             guard let ctx = CGContext(data: buf.baseAddress, width: w, height: h, bitsPerComponent: 8,
@@ -389,19 +390,11 @@ struct Bitmap: Equatable {
             ctx.setShouldAntialias(false)
             ctx.setAllowsFontSmoothing(false)
             ctx.setShouldSmoothFonts(false)
-            var attrs: [NSAttributedString.Key: Any] = [
-                NSAttributedString.Key(kCTFontAttributeName as String): font,
-                NSAttributedString.Key(kCTForegroundColorAttributeName as String): color.cgColor,
-            ]
-            if underline {
-                attrs[NSAttributedString.Key(kCTUnderlineStyleAttributeName as String)] =
-                    NSNumber(value: CTUnderlineStyle.single.rawValue)
-            }
-            let setter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: text, attributes: attrs))
-            let box = CGRect(x: rect.x, y: h - rect.y - rect.height, width: rect.width, height: rect.height)
-            let frame = CTFramesetterCreateFrame(setter, CFRange(location: 0, length: 0), CGPath(rect: box, transform: nil), nil)
+            let box = CGRect(x: CGFloat(origin.x), y: CGFloat(h - origin.y) - layout.size.height,
+                             width: layout.size.width, height: layout.size.height)
             ctx.clip(to: box)
-            CTFrameDraw(frame, ctx)
+            ctx.translateBy(x: box.minX, y: box.minY)
+            CTFrameDraw(layout.frame, ctx)
         }
     }
 

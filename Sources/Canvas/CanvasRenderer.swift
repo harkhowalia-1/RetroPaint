@@ -75,6 +75,20 @@ enum CanvasRenderer {
         if let sel = doc.selection { dashed(viewRect(sel.rect).insetBy(dx: 0.5, dy: 0.5), ctx) }
         if let m = doc.marquee { dashed(viewRect(m).insetBy(dx: 0.5, dy: 0.5), ctx) }
 
+        if let t = doc.textOverlay() {
+            func toView(_ r: CGRect) -> CGRect {
+                CGRect(x: rect.minX + r.minX * z, y: rect.minY + r.minY * z, width: r.width * z, height: r.height * z)
+            }
+            ctx.saveGState()
+            ctx.clip(to: viewRect(t.box))
+            ctx.setBlendMode(.difference)
+            ctx.setFillColor(CanvasColors.white)
+            for h in t.highlights { ctx.fill(toView(h)) }
+            if let c = t.caret { var r = toView(c); r.size.width = max(1, z / 2); ctx.fill(r) }
+            ctx.restoreGState()
+            dashed(viewRect(t.box).insetBy(dx: -0.5, dy: -0.5), ctx)
+        }
+
         if doc.lassoPoints.count > 1 {
             ctx.setStrokeColor(CanvasColors.black)
             ctx.setLineWidth(1)

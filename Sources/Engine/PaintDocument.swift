@@ -22,14 +22,28 @@ struct Selection {
 
 enum DialogKind: Identifiable {
     case attributes, flipRotate, stretchSkew, customZoom, editColors, about, helpTopics
-    case text(IntRect)
 
-    var id: String {
-        switch self {
-        case .text(let r): "text-\(r.x)-\(r.y)-\(r.width)-\(r.height)"
-        default: "\(self)"
-        }
-    }
+    var id: String { "\(self)" }
+}
+
+/// A text box being typed into on the canvas.
+struct TextBox {
+    var rect: IntRect
+    var text = ""
+    var selection = NSRange(location: 0, length: 0)
+    /// The picture under the box before any text was typed.
+    var base: Bitmap
+}
+
+/// The platform's hidden text view that receives keystrokes for the text tool.
+@MainActor
+protocol TextInputBridge: AnyObject {
+    /// Starts a fresh, empty edit and takes keyboard focus.
+    func beginTextEditing()
+    /// Takes keyboard focus back without changing the text.
+    func focusText()
+    func endTextEditing()
+    func setTextSelection(_ range: NSRange)
 }
 
 enum ImportMode { case open, pasteFrom }
@@ -72,8 +86,8 @@ final class PaintDocument: ObservableObject {
     @Published var tool: Tool = .pencil {
         didSet { if oldValue != tool { toolDidChange(from: oldValue) } }
     }
-    @Published var primary = RGBA.black
-    @Published var secondary = RGBA.white
+    @Published var primary = RGBA.black { didSet { if textBox != nil { renderTextBox() } } }
+    @Published var secondary = RGBA.white { didSet { if textBox != nil { renderTextBox() } } }
     @Published var palette = Palette.standard
     @Published var selectedPaletteIndex = 0
 
@@ -82,7 +96,17 @@ final class PaintDocument: ObservableObject {
     @Published var eraserSize = 8
     @Published var airbrushSize = 9
     @Published var fillStyle = FillStyle.outline
-    @Published var transparentSelection = false { didSet { refresh() } }
+    @Published var transparentSelection = false { didSet { if textBox != nil { renderTextBox() } else { refresh() } } }
+
+    // Text tool
+    private(set) var textBox: TextBox?
+    @Published private(set) var isEditingText = false
+    @Published var textStyle = TextLayout.Style() { didSet { if textBox != nil { renderTextBox(); textInput?.focusText() } } }
+    @Published var showTextToolbar = true
+    weak var textInput: TextInputBridge?
+    private(set) var caretVisible = true
+    private var caretTimer: Timer?
+    private var textClickCommits = false
 
     @Published var zoom = 1
     @Published var showGrid = false { didSet { refresh() } }
@@ -116,6 +140,7 @@ final class PaintDocument: ObservableObject {
         case marquee(start: IntPoint)
         case lasso
         case moveSelection(grab: IntPoint)
+        case textSelect(anchor: Int)
         case resize(ResizeHandle)
         case polygon
         case curve
@@ -184,6 +209,7 @@ final class PaintDocument: ObservableObject {
     }
 
     func undo() {
+        commitText()
         if polygon != nil || curve != nil { cancelDrafts(); return }
         selection = nil
         guard let prev = undoStack.popLast() else { refresh(); return }
@@ -272,8 +298,21 @@ final class PaintDocument: ObservableObject {
             pushUndo()
             gesture = .shape(start: ip, base: image, button: button)
             renderShape(from: ip, to: ip, button: button)
-        case .rectSelect, .freeSelect, .text:
-            if tool != .text, let s = selection, s.rect.contains(ip) {
+        case .text:
+            if let box = textBox, box.rect.contains(ip) {
+                let idx = textIndex(at: p)
+                setTextSelection(NSRange(location: idx, length: 0))
+                gesture = .textSelect(anchor: idx)
+            } else {
+                // As in XP, a click outside an open box only finishes it; a drag still starts a new one.
+                textClickCommits = textBox != nil
+                commitText()
+                commitSelection()
+                marquee = IntRect(corner: ip, ip)
+                gesture = .marquee(start: ip)
+            }
+        case .rectSelect, .freeSelect:
+            if let s = selection, s.rect.contains(ip) {
                 beginMove(at: ip, duplicate: duplicate)
             } else {
                 commitSelection()
@@ -337,6 +376,9 @@ final class PaintDocument: ObservableObject {
             if shift { end = tool == .line ? constrainLine(ip, from: start) : constrainSquare(ip, from: start) } else { end = ip }
             renderShape(from: start, to: end, button: button)
             status.extent = IntSize(width: end.x - start.x, height: end.y - start.y)
+        case .textSelect(let anchor):
+            let idx = textIndex(at: p)
+            setTextSelection(NSRange(location: min(anchor, idx), length: abs(idx - anchor)))
         case .marquee(let start):
             let r = IntRect(corner: start, ip)
             marquee = r
@@ -384,7 +426,12 @@ final class PaintDocument: ObservableObject {
             marquee = nil
             let r = IntRect(corner: start, ip).intersection(image.bounds)
             if tool == .text {
-                if r.width > 4 && r.height > 4 { dialog = .text(r) }
+                // A plain click gets a one-line box, which grows as you type.
+                let dragged = r.width > 8 && r.height > 8
+                let box = dragged ? r
+                    : IntRect(x: start.x, y: start.y, width: 160,
+                              height: TextLayout.fittingHeight(text: "", style: textStyle, width: 160)).intersection(image.bounds)
+                if !box.isEmpty && (dragged || !textClickCommits) { beginText(in: box) }
             } else if !r.isEmpty && (r.width > 1 || r.height > 1) {
                 selection = Selection(content: image.cropped(to: r, fill: secondary.pixel), mask: nil, origin: r.origin, lifted: false)
             }
@@ -561,6 +608,7 @@ final class PaintDocument: ObservableObject {
 
     /// Accepts any half-drawn polygon or curve as it stands.
     func finishDrafts() {
+        commitText()
         if polygon != nil { finishPolygon() }
         curve = nil
     }
@@ -572,6 +620,7 @@ final class PaintDocument: ObservableObject {
     }
 
     func cancel() {
+        if textBox != nil { commitText(); return }
         if polygon != nil || curve != nil { cancelDrafts(); return }
         commitSelection()
         refresh()
@@ -745,17 +794,87 @@ final class PaintDocument: ObservableObject {
 
     // MARK: Text
 
-    func placeText(_ text: String, in rect: IntRect, fontName: String, size: Double, bold: Bool, italic: Bool, underline: Bool) {
-        guard !text.isEmpty else { return }
+    private func beginText(in rect: IntRect) {
         pushUndo()
-        if !transparentSelection { image.fill(rect, secondary.pixel) }
-        var font = CTFontCreateWithName(fontName as CFString, size, nil)
-        var traits = CTFontSymbolicTraits()
-        if bold { traits.insert(.traitBold) }
-        if italic { traits.insert(.traitItalic) }
-        if !traits.isEmpty, let styled = CTFontCreateCopyWithSymbolicTraits(font, size, nil, traits, traits) { font = styled }
-        image.drawText(text, in: rect, font: font, underline: underline, color: primary)
+        textBox = TextBox(rect: rect, base: image)
+        isEditingText = true
+        renderTextBox()
+        textInput?.beginTextEditing()
+        caretVisible = true
+        caretTimer = Timer.scheduledTimer(withTimeInterval: 0.53, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.textBox != nil else { return }
+                self.caretVisible.toggle()
+                self.onCanvasChange?()
+            }
+        }
+    }
+
+    /// Bakes the typed text into the picture and closes the box.
+    func commitText() {
+        guard let box = textBox else { return }
+        caretTimer?.invalidate()
+        caretTimer = nil
+        textBox = nil
+        isEditingText = false
+        if box.text.isEmpty { discardLastUndo(restore: true) }
+        textInput?.endTextEditing()
         refresh()
+    }
+
+    private func layout(for box: TextBox) -> TextLayout {
+        TextLayout(text: box.text, style: textStyle, color: primary,
+                   size: CGSize(width: box.rect.width, height: box.rect.height))
+    }
+
+    /// Redraws the box's text over its saved background, growing the box downward to fit.
+    private func renderTextBox() {
+        guard var box = textBox else { return }
+        let needed = TextLayout.fittingHeight(text: box.text, style: textStyle, width: CGFloat(box.rect.width))
+        if needed > box.rect.height { box.rect.height = min(needed, image.height - box.rect.y) }
+        textBox = box
+        image = box.base
+        if !transparentSelection { image.fill(box.rect, secondary.pixel) }
+        image.drawText(layout(for: box), at: box.rect.origin)
+        refresh()
+    }
+
+    /// Called by the platform text view as the user types.
+    func textDidChange(_ text: String, selection: NSRange) {
+        guard textBox != nil else { return }
+        textBox?.text = text
+        textBox?.selection = selection
+        isDirty = true
+        caretVisible = true
+        renderTextBox()
+    }
+
+    func textSelectionDidChange(_ selection: NSRange) {
+        guard textBox != nil else { return }
+        textBox?.selection = selection
+        caretVisible = true
+        onCanvasChange?()
+    }
+
+    private func setTextSelection(_ range: NSRange) {
+        textBox?.selection = range
+        textInput?.setTextSelection(range)
+        caretVisible = true
+        refresh()
+    }
+
+    private func textIndex(at p: CGPoint) -> Int {
+        guard let box = textBox else { return 0 }
+        return layout(for: box).index(at: CGPoint(x: p.x - CGFloat(box.rect.x), y: p.y - CGFloat(box.rect.y)))
+    }
+
+    /// Caret and selection highlight for the canvas overlay, in image pixels.
+    func textOverlay() -> (box: IntRect, caret: CGRect?, highlights: [CGRect])? {
+        guard let box = textBox else { return nil }
+        let l = layout(for: box)
+        let offset = CGAffineTransform(translationX: CGFloat(box.rect.x), y: CGFloat(box.rect.y))
+        let caret = box.selection.length == 0 && caretVisible ? l.caret(at: box.selection.location).applying(offset) : nil
+        return (box.rect, caret, l.highlightRects(box.selection).map { $0.applying(offset) })
     }
 
     // MARK: Colors

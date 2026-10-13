@@ -123,7 +123,6 @@ struct DialogHost: View {
         case .editColors: EditColorsDialog(doc: doc)
         case .about: AboutDialog()
         case .helpTopics: HelpDialog()
-        case .text(let rect): TextDialog(doc: doc, rect: rect)
         }
     }
 }
@@ -250,57 +249,6 @@ struct EditColorsDialog: View {
     }
 }
 
-struct TextDialog: View {
-    @ObservedObject var doc: PaintDocument
-    let rect: IntRect
-    @State private var text = ""
-    @State private var fontName = "Helvetica"
-    @State private var size = 14
-    @State private var bold = false
-    @State private var italic = false
-    @State private var underline = false
-
-    private let fonts = ["Helvetica", "Arial", "Times New Roman", "Courier New", "Georgia", "Verdana", "Trebuchet MS", "Comic Sans MS", "Menlo"]
-
-    var body: some View {
-        XPDialog(title: "Fonts", onOK: {
-            doc.placeText(text, in: rect, fontName: fontName, size: Double(size), bold: bold, italic: italic, underline: underline)
-        }) {
-            HStack {
-                Picker("", selection: $fontName) { ForEach(fonts, id: \.self) { Text($0).tag($0) } }
-                    .labelsHidden()
-                    .frame(maxWidth: 170)
-                Picker("", selection: $size) { ForEach([8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72], id: \.self) { Text("\($0)").tag($0) } }
-                    .labelsHidden()
-                    .frame(width: 70)
-            }
-            HStack(spacing: 2) {
-                styleToggle("B", $bold).bold()
-                styleToggle("I", $italic).italic()
-                styleToggle("U", $underline).underline()
-            }
-            TextEditor(text: $text)
-                .font(.custom(fontName, size: CGFloat(size)))
-                .bold(bold).italic(italic).underline(underline)
-                .foregroundStyle(doc.primary.color)
-                .scrollContentBackground(.hidden)
-                .background(doc.transparentSelection ? Color.white.opacity(0.6) : doc.secondary.color)
-                .frame(minHeight: 100)
-                .overlay(Bevel(style: .sunken))
-            Text("Text box: \(rect.width)x\(rect.height) at \(rect.x),\(rect.y)").foregroundStyle(XP.darkShadow)
-        }
-    }
-
-    private func styleToggle(_ title: String, _ value: Binding<Bool>) -> some View {
-        Button { value.wrappedValue.toggle() } label: {
-            Text(title).frame(width: 23, height: 22)
-                .background(value.wrappedValue ? AnyView(Dither()) : AnyView(XP.face))
-                .overlay(Bevel(style: value.wrappedValue ? .sunken : .raised))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 struct AboutDialog: View {
     var body: some View {
         XPDialog(title: "About RetroPaint", showsCancel: false, onOK: {}) {
@@ -331,7 +279,7 @@ struct HelpDialog: View {
                         }
                     }
                     Divider()
-                    Text("Left click draws with the foreground color, right click with the background color. On iPad and iPhone, long-press a palette color to set the background color. Hold Shift for straight lines, squares and circles. Two fingers scroll the picture; pinch to zoom.")
+                    Text("Left click draws with the foreground color, right click with the background color. On iPad and iPhone, long-press a palette color to set the background color. Hold Shift for straight lines, squares and circles. With the Text tool, drag a box (or click) and type; click outside the box to finish. Two fingers scroll the picture; pinch to zoom.")
                 }
             }
             .frame(maxHeight: 360)

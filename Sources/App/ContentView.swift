@@ -54,7 +54,12 @@ struct ClassicLayout: View {
                 if doc.showToolBox { ToolBox(doc: doc) }
                 CanvasHost(doc: doc)
                     .overlay(Bevel(style: .sunken))
-                    .overlay(alignment: .topTrailing) { if doc.showThumbnail && doc.zoom > 1 { Thumbnail(doc: doc) } }
+                    .overlay(alignment: .topTrailing) {
+                        VStack(alignment: .trailing, spacing: 0) {
+                            if doc.isEditingText && doc.showTextToolbar { FontsToolbar(doc: doc).padding([.top, .trailing], 12) }
+                            if doc.showThumbnail && doc.zoom > 1 { Thumbnail(doc: doc) }
+                        }
+                    }
             }
             if doc.showColorBox { ColorBox(doc: doc) }
             if doc.showStatusBar { StatusBar(doc: doc) }
@@ -99,6 +104,10 @@ struct CompactLayout: View {
 
             if doc.showStatusBar {
                 StatusBar(doc: doc)
+            }
+            if doc.isEditingText && doc.showTextToolbar {
+                ScrollView(.horizontal, showsIndicators: false) { FontsToolbar(doc: doc, showsTitle: false) }
+                    .background(XP.face)
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 OptionsBox(doc: doc, axis: .horizontal).frame(height: 34)
