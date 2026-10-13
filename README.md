@@ -10,6 +10,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/harkhowalia-1/RetroPaint/releases/latest/download/RetroPaint-macOS.dmg"><b>⬇ Download for Mac (.dmg)</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/harkhowalia-1/RetroPaint/releases/latest/download/RetroPaint-iOS.ipa"><b>⬇ Download for iPhone &amp; iPad (.ipa)</b></a>
+</p>
+
+<p align="center">
   <img src="docs/assets/screens/mac.png" width="720" alt="RetroPaint on macOS">
 </p>
 
@@ -30,7 +36,16 @@
 - **One codebase, three devices** — SwiftUI with a shared drawing engine. Mac and iPad use the classic window layout; iPhone re-flows it for one hand.
 - **Classic chrome** — beveled buttons, Luna-style title bars with close boxes, and classic message boxes.
 
-## Build
+## Download
+
+| Platform | File | Notes |
+| --- | --- | --- |
+| Mac | [RetroPaint-macOS.dmg](https://github.com/harkhowalia-1/RetroPaint/releases/latest/download/RetroPaint-macOS.dmg) | macOS 14+, Apple silicon and Intel. Open the DMG and drag RetroPaint to Applications. The app isn't notarized yet, so on first launch right-click it and choose **Open** (or allow it in System Settings → Privacy & Security). |
+| iPhone & iPad | [RetroPaint-iOS.ipa](https://github.com/harkhowalia-1/RetroPaint/releases/latest/download/RetroPaint-iOS.ipa) | iOS 17+. Unsigned — install with [AltStore](https://altstore.io) or [Sideloadly](https://sideloadly.io), which sign it with your Apple ID. |
+
+All builds are on the [Releases page](https://github.com/harkhowalia-1/RetroPaint/releases).
+
+## Build from source
 
 Requires a recent Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 

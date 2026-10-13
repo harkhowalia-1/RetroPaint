@@ -129,6 +129,22 @@ kbd { font: 11px var(--ui-font); color: #555; }
 .tip { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font-size: 12px; color: #555; }
 .tip img { width: 16px; }
 
+.downloads { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0 0; }
+.dl {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; text-decoration: none; color: #fff;
+  border: 1px solid #1e5c1e; border-radius: 4px;
+  background: linear-gradient(180deg, #5fc35f 0%, #3a9a3a 45%, #2f8a2f 55%, #3fa83f 100%);
+  box-shadow: inset 0 1px rgba(255,255,255,.5), 1px 2px 3px rgba(0,0,0,.25);
+  text-shadow: 1px 1px 1px rgba(0,0,0,.4);
+}
+.dl:hover { filter: brightness(1.08); }
+.dl:active { filter: brightness(.95); box-shadow: inset 1px 1px 3px rgba(0,0,0,.4); }
+.dl:focus-visible { outline: 2px dotted #000; outline-offset: 2px; }
+.dl img { width: 32px; height: 32px; flex: none; filter: drop-shadow(1px 1px 1px rgba(0,0,0,.3)); }
+.dl b { display: block; font-size: 14px; }
+.dl small { display: block; font-size: 10.5px; opacity: .92; line-height: 1.3; }
+.dl-note { margin: 6px 0 0; }
+
 /* ---------- Paint window ---------- */
 .menubar { display: flex; gap: 0; padding: 1px 2px; border-bottom: 1px solid #fff; flex: none; }
 .menu { position: relative; }
@@ -310,6 +326,7 @@ kbd { font: 11px var(--ui-font); color: #555; }
   .hero { flex-direction: column; text-align: center; }
   .hero-title { font-size: 40px; }
   .facts { grid-template-columns: repeat(2, 1fr); }
+  .downloads { grid-template-columns: 1fr; text-align: left; }
   .cta { justify-content: center; }
   .paint-body { min-height: 0; }
   .tip { display: none; }
