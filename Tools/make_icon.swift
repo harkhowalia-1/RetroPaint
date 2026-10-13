@@ -9,45 +9,74 @@ let N = 32
 var art = [[RGB?]](repeating: [RGB?](repeating: nil, count: N), count: N)
 func set(_ x: Int, _ y: Int, _ c: RGB) { if x >= 0 && y >= 0 && x < N && y < N { art[y][x] = c } }
 
-let black: RGB = (0, 0, 0), white: RGB = (255, 255, 255), shadow: RGB = (22, 52, 140)
+let black: RGB = (0, 0, 0)
 
-// Paper with drop shadow and outline.
-for y in 6...27 { for x in 7...24 { set(x, y, shadow) } }
-for y in 5...26 { for x in 6...23 { set(x, y, (y == 5 || y == 26 || x == 6 || x == 23) ? black : white) } }
-
-// Rainbow arc on the paper.
-let rings: [RGB] = [(230, 30, 30), (255, 140, 0), (255, 220, 0), (40, 180, 40), (30, 90, 230), (120, 40, 200)]
-for y in 8...21 { for x in 7...22 {
-    let d = hypot(Double(x) + 0.5 - 13.0, Double(y) + 0.5 - 22.0)
-    let i = Int(10.5 - d)
-    if i >= 0 && i < rings.count && Double(y) < 21 { set(x, y, rings[i]) }
-}}
-
-// Pencil lying diagonally across the corner, tip touching the paper.
-let a = (x: 28.5, y: 9.0), b = (x: 16.0, y: 21.5)
-let len = hypot(b.x - a.x, b.y - a.y), dx = (b.x - a.x) / len, dy = (b.y - a.y) / len
-var pencil = Set<Int>()
-for y in 0..<N { for x in 0..<N {
-    let px = Double(x) + 0.5 - a.x, py = Double(y) + 0.5 - a.y
-    let u = px * dx + py * dy, v = abs(px * dy - py * dx)
-    guard u >= 0 && u <= len else { continue }
-    let coneStart = len - 4.5
-    let halfWidth = u < coneStart ? 1.9 : 1.9 * (len - u) / 4.5
-    guard v <= halfWidth else { continue }
-    let c: RGB
-    if u < 2.5 { c = (240, 150, 160) }
-    else if u < 4 { c = (190, 190, 200) }
-    else if u < coneStart { c = v < 0.7 ? (255, 225, 70) : (240, 180, 20) }
-    else if u < len - 1.6 { c = (235, 200, 150) }
-    else { c = (40, 40, 40) }
-    set(x, y, c); pencil.insert(y * N + x)
-}}
-for p in pencil {
-    let x = p % N, y = p / N
-    for (ox, oy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] where !pencil.contains((y + oy) * N + x + ox) {
-        set(x + ox, y + oy, black)
+/// Draws a stick (brush or pencil) from `a` (bottom, inside the cup) to `b` (top), then outlines it.
+/// `shape` gives the half-width and colour at distance `u` along the stick.
+func stick(from a: (x: Double, y: Double), to b: (x: Double, y: Double),
+           _ shape: (_ u: Double, _ len: Double, _ v: Double) -> RGB?, halfWidth: (_ u: Double, _ len: Double) -> Double) {
+    let len = hypot(b.x - a.x, b.y - a.y), dx = (b.x - a.x) / len, dy = (b.y - a.y) / len
+    var mine = Set<Int>()
+    for y in 0..<N { for x in 0..<N {
+        let px = Double(x) + 0.5 - a.x, py = Double(y) + 0.5 - a.y
+        let u = px * dx + py * dy, v = abs(px * dy - py * dx)
+        guard u >= 0, u <= len, v <= halfWidth(u, len), let c = shape(u, len, v) else { continue }
+        set(x, y, c); mine.insert(y * N + x)
+    }}
+    for p in mine {
+        let x = p % N, y = p / N
+        for (ox, oy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] where !mine.contains((y + oy) * N + x + ox) {
+            set(x + ox, y + oy, black)
+        }
     }
 }
+
+/// A paintbrush: wooden handle, metal ferrule, bristles dipped in `paint`.
+func brush(from a: (x: Double, y: Double), to b: (x: Double, y: Double), handle: RGB, paint: RGB) {
+    stick(from: a, to: b, { u, len, v in
+        if u < len - 8 { return v < 0.5 ? handle : (handle.0 / 4 * 3, handle.1 / 4 * 3, handle.2 / 4 * 3) }
+        if u < len - 6 { return (200, 200, 210) }
+        if u < len - 3.5 { return (90, 60, 40) }
+        return paint
+    }, halfWidth: { u, len in
+        if u < len - 8 { return 1.1 }
+        if u < len - 6 { return 1.5 }
+        if u < len - 2 { return 1.9 }
+        return 1.9 * max(0.25, (len - u) / 2)
+    })
+}
+
+// Behind the cup: two brushes and a pencil, fanned out.
+brush(from: (14.5, 25), to: (4.5, 3.5), handle: (200, 40, 40), paint: (30, 90, 230))
+brush(from: (16.5, 25), to: (15.0, 1.5), handle: (150, 95, 50), paint: (40, 180, 40))
+stick(from: (18.5, 25), to: (27.5, 4.0), { u, len, v in
+    if u < len - 5 { return v < 0.6 ? (255, 225, 70) : (240, 175, 20) }
+    if u < len - 1.8 { return (235, 200, 150) }
+    return (40, 40, 40)
+}, halfWidth: { u, len in u < len - 5 ? 1.7 : 1.7 * (len - u) / 5 })
+
+// The glass cup: everything behind it shows through, tinted.
+func blend(_ a: RGB, _ b: RGB, _ t: Double) -> RGB {
+    (UInt8(Double(a.0) * (1 - t) + Double(b.0) * t), UInt8(Double(a.1) * (1 - t) + Double(b.1) * t),
+     UInt8(Double(a.2) * (1 - t) + Double(b.2) * t))
+}
+let glass: RGB = (175, 215, 240)
+for y in 16...29 {
+    let inset = y >= 27 ? 1 : 0  // the base narrows slightly
+    for x in (8 + inset)...(23 - inset) {
+        let edge = y == 16 || y == 29 || x == 8 + inset || x == 23 - inset
+        if edge { set(x, y, black); continue }
+        let under = art[y][x] ?? (235, 245, 255)
+        // Outlines fade most behind the glass, so the sticks read as soft colour.
+        var c = blend(under, glass, under == black ? 0.8 : 0.4)
+        if x == 10 + inset || x == 11 + inset { c = blend(c, (255, 255, 255), 0.6) }  // highlight
+        if y == 17 { c = (225, 240, 255) }  // rim
+        set(x, y, c)
+    }
+}
+// Red paint dripping over the rim.
+for (x, h) in [(17, 3), (18, 5), (19, 4), (20, 2)] { for y in 17...(17 + h) { set(x, y, (215, 35, 35)) } }
+set(18, 23, (215, 35, 35))
 
 let space = CGColorSpace(name: CGColorSpace.sRGB)!
 func context(_ s: Int) -> CGContext {
