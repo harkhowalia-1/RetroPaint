@@ -77,3 +77,9 @@ RetroPaint is released under the [MIT License](LICENSE).
 ## Disclaimer
 
 RetroPaint is an independent, from-scratch project inspired by the bitmap editors of the early 2000s. It contains no code or artwork from any other product and is not affiliated with or endorsed by Microsoft. Windows and Paint are trademarks of Microsoft Corporation.
+
+## Support
+
+If you enjoy this project, you can support me here:
+
+<a href="https://buymeacoffee.com/harkhowalia"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-orange.png" alt="Buy me a coffee" height="50"></a>
