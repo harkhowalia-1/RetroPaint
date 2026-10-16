@@ -5,7 +5,7 @@
 <h1 align="center">RetroPaint</h1>
 
 <p align="center">
-  The classic early-2000s bitmap editor, rebuilt from scratch as a native app for <b>Mac, iPad and iPhone</b>.<br>
+  The classic early-2000s MS Paint, rebuilt from scratch as a native app for <b>Mac, iPad and iPhone</b>.<br>
   <a href="https://harkhowalia-1.github.io/RetroPaint/"><b>Website &amp; in-browser demo →</b></a>
 </p>
 
